@@ -365,6 +365,9 @@ where
 
     /// Set intensity for all displays
     pub fn set_intensity_all(&mut self, intensity: u8) -> Result<()> {
+        if intensity > 0x0F {
+            return Err(Error::InvalidIntensity);
+        }
         let ops = [(Register::Intensity, intensity); MAX_DISPLAYS];
         self.write_all_registers(&ops[..self.device_count])
     }
@@ -932,6 +935,16 @@ mod tests {
         driver
             .set_intensity_all(intensity)
             .expect("Set intensity all failed");
+        spi.done();
+    }
+
+    #[test]
+    fn test_set_intensity_all_invalid() {
+        let mut spi = SpiMock::new(&[]); // No transactions expected for invalid input
+        let mut driver = Max7219::new(&mut spi);
+
+        let result = driver.set_intensity_all(0x10); // Invalid intensity > 0x0F
+        assert_eq!(result, Err(Error::InvalidIntensity));
         spi.done();
     }
 }
